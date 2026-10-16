@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baking Master 烘焙單字王 - 闖關驗收版</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans TC', 'Fredoka', sans-serif;
+            background-color: #FFFBEB; /* Amber 50 */
+        }
+        @keyframes pulse-slow {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .pulse-animation {
+            animation: pulse-slow 2s infinite;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificate-modal, #certificate-modal * {
+                visibility: visible;
+            }
+            #certificate-modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: white;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <header class="bg-amber-600 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="showScreen('home')">
+                <i class="fa-solid font-bold fa-wheat-awn text-2xl text-amber-200"></i>
+                <h1 class="text-xl md:text-2xl font-bold tracking-wide">Baking Master 烘焙驗收王</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <div id="student-tag" class="hidden bg-amber-800 px-3 py-1 rounded-full text-xs font-semibold text-amber-100 flex items-center gap-1">
+                    <i class="fa-solid fa-user-graduate"></i>
+                    <span id="display-student-info">座號/姓名</span>
+                </div>
+                <div class="bg-amber-700 px-3 py-1 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-star text-yellow-300"></i>
+                    <span>總分: <span id="score">0</span></span>
+                </div>
+                <button onclick="toggleSlowSpeech()" id="slow-speech-btn" class="bg-amber-500 hover:bg-amber-400 text-xs px-2.5 py-1 rounded-lg transition font-medium flex items-center gap-1">
+                    <i class="fa-solid fa-turtle"></i> 慢速: <span id="slow-status">關</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-4xl w-full mx-auto p-4 flex flex-col justify-center">
+
+        <!-- 0. STUDENT INFO INPUT SCREEN -->
+        <div id="screen-user-info" class="bg-white rounded-3xl p-8 border-2 border-amber-200 shadow-xl text-center space-y-6 my-auto max-w-md mx-auto w-full">
+            <div class="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-4xl mx-auto shadow-inner">
+                <i class="fa-solid fa-id-card"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-extrabold text-amber-900">歡迎來到烘焙闖關驗收！</h2>
+                <p class="text-slate-500 text-sm mt-1">請先填寫座號與姓名，以便記錄成績與頒發證書</p>
+            </div>
+            <form onsubmit="saveStudentInfo(event)" class="space-y-4 text-left">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">學生座號 (例如：01)</label>
+                    <input type="text" id="input-seat" required placeholder="例如：08" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">學生姓名</label>
+                    <input type="text" id="input-name" required placeholder="例如：王小明" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow-lg transition text-base flex items-center justify-center gap-2">
+                    開始驗收闖關 <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- 1. HOME DASHBOARD -->
+        <div id="screen-home" class="hidden space-y-6 my-auto py-4">
+            <div class="text-center space-y-2">
+                <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">高職烘焙科專業語文測驗</span>
+                <h2 class="text-3xl font-black text-amber-900">烘焙能力闖關關卡 🥖</h2>
+                <p class="text-slate-600 text-sm max-w-lg mx-auto">請依序完成「聽力測驗」與「食譜口說關卡」，挑戰獲得特優烘焙大師證書！</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                <!-- Mode 1 Card (Listening - 20 Qs) -->
+                <div onclick="startListeningGame()" class="bg-white rounded-2xl p-6 border-2 border-orange-200 shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 cursor-pointer flex flex-col justify-between group">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-14 h-14 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                                <i class="fa-solid fa-headphones"></i>
+                            </div>
+                            <span class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-triangle-exclamation"></i> 亂猜扣分</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-1">關卡一：主廚聽力大挑戰</h3>
+                        <p class="text-slate-500 text-sm">聽辨主廚口令，選出正確食材/工具。共 20 題，答錯扣 5 分！</p>
+                    </div>
+                    <div class="mt-6 flex items-center justify-between text-orange-600 font-bold text-sm">
+                        <span>最高紀錄: <span id="listening-best">0</span>/200</span>
+                        <span class="flex items-center">開始測驗 <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition"></i></span>
+                    </div>
+                </div>
+
+                <!-- Mode 2 Card (Speaking - 5 Rounds) -->
+                <div onclick="startSpeakingGame()" class="bg-white rounded-2xl p-6 border-2 border-rose-200 shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 cursor-pointer flex flex-col justify-between group">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                                <i class="fa-solid fa-microphone"></i>
+                            </div>
+                            <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded-full">5 回合經典食譜</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-1">關卡二：魔法食譜口說解鎖</h3>
+                        <p class="text-slate-500 text-sm">唸出正確英文食材解鎖 5 道經典烘焙食譜（每回合 3 種食材）。</p>
+                    </div>
+                    <div class="mt-6 flex items-center justify-between text-rose-600 font-bold text-sm">
+                        <span>完成進度: <span id="speaking-best">0</span>/5 回合</span>
+                        <span class="flex items-center">開始挑戰 <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition"></i></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap justify-center gap-4 pt-2">
+                <button onclick="showCertificate()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-full shadow-md text-sm transition inline-flex items-center gap-2">
+                    <i class="fa-solid fa-award"></i> 查看烘焙師證書
+                </button>
+                <button onclick="showScreen('vocab-bank')" class="bg-white hover:bg-amber-50 text-amber-800 border border-amber-300 font-semibold px-6 py-2.5 rounded-full shadow-sm text-sm transition inline-flex items-center gap-2">
+                    <i class="fa-solid fa-book"></i> 瀏覽完整 42 個單字庫
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. MODE 1: LISTENING GAME (20 QUESTIONS WITH PENALTY) -->
+        <div id="screen-listening" class="hidden space-y-5 my-auto w-full">
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-amber-100">
+                <button onclick="showScreen('home')" class="text-slate-500 hover:text-slate-800 text-sm font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-chevron-left"></i> 返回主頁
+                </button>
+                <h3 class="font-bold text-amber-900">主廚聽力大挑戰</h3>
+                <span class="text-xs font-bold bg-orange-100 text-orange-800 px-3 py-1 rounded-md" id="listening-progress">題目: 1/20</span>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border-2 border-amber-200 shadow-md text-center space-y-5">
+                <div class="flex justify-around items-center bg-amber-50 rounded-xl p-3 text-xs md:text-sm font-bold text-amber-900">
+                    <span>正確: +10分</span>
+                    <span class="text-rose-600"><i class="fa-solid fa-triangle-exclamation"></i> 答錯: -5分 (扣至0為止)</span>
+                    <span>本關得分: <span id="listening-current-score" class="text-base text-amber-700">0</span></span>
+                </div>
+
+                <div class="inline-block bg-amber-100 p-3.5 rounded-full text-amber-700 text-3xl">
+                    <i class="fa-solid fa-user-chef"></i>
+                </div>
+                <h4 class="text-base font-bold text-slate-700">請聽語音，選出主廚指定的工具或食材！</h4>
+
+                <div class="flex justify-center gap-3">
+                    <button onclick="playListeningPrompt()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-full shadow-md text-base transition flex items-center gap-2 pulse-animation">
+                        <i class="fa-solid fa-volume-high"></i> 播放語音
+                    </button>
+                    <button onclick="showListeningHint()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold px-3 py-2 rounded-full transition">
+                        💡 首字母提示
+                    </button>
+                </div>
+
+                <p id="listening-hint-text" class="text-xs text-amber-600 font-bold min-h-[1.25rem]"></p>
+
+                <div id="listening-options" class="grid grid-cols-2 gap-3.5 pt-1">
+                    <!-- Dynamic Options -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. MODE 2: SPEAKING GAME (5 ROUNDS) -->
+        <div id="screen-speaking" class="hidden space-y-5 my-auto w-full">
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-amber-100">
+                <button onclick="showScreen('home')" class="text-slate-500 hover:text-slate-800 text-sm font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-chevron-left"></i> 返回主頁
+                </button>
+                <h3 class="font-bold text-amber-900">魔法食譜口說解鎖 (5回合)</h3>
+                <span class="text-xs font-bold bg-rose-100 text-rose-800 px-3 py-1 rounded-md" id="speaking-round-tag">回合: 1/5</span>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border-2 border-rose-200 shadow-md text-center space-y-5">
+                <div class="bg-rose-50 p-3.5 rounded-xl inline-block w-full">
+                    <span class="text-xs font-bold text-rose-600 uppercase tracking-wider block mb-1" id="recipe-name-display">目標食譜：海綿蛋糕</span>
+                    <h4 class="text-2xl font-black text-slate-800" id="target-word-en">cake flour</h4>
+                    <p class="text-slate-500 text-xs md:text-sm mt-0.5" id="target-word-zh">低筋麵粉</p>
+                </div>
+
+                <div class="flex justify-center items-center gap-4">
+                    <button onclick="speakTargetWord()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 p-3 rounded-full transition text-lg" title="示範發音">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                    
+                    <button id="mic-btn" onclick="toggleSpeechRecognition()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold w-16 h-16 rounded-full shadow-lg text-2xl flex items-center justify-center transition">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                </div>
+
+                <div class="min-h-[2.5rem]">
+                    <p id="speech-status" class="text-xs text-slate-500">按一下麥克風，唸出上面的英文單字</p>
+                    <p id="speech-result" class="text-xs font-bold text-rose-600 mt-1"></p>
+                </div>
+
+                <!-- Recipe Bowl Preview -->
+                <div class="border-t border-slate-100 pt-3">
+                    <div class="flex justify-between items-center mb-2 px-2">
+                        <span class="text-xs font-bold text-slate-400">當前食譜收集進度</span>
+                        <span class="text-xs font-bold text-rose-600" id="recipe-progress-text">0/3 食材</span>
+                    </div>
+                    <div id="bowl-ingredients" class="flex justify-center gap-3">
+                        <!-- Ingredient Badges -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. VOCABULARY BANK SCREEN -->
+        <div id="screen-vocab-bank" class="hidden space-y-4 my-auto w-full">
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-amber-100">
+                <button onclick="showScreen('home')" class="text-slate-500 hover:text-slate-800 text-sm font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-chevron-left"></i> 返回主頁
+                </button>
+                <h3 class="font-bold text-amber-900">單字庫 (共 42 字)</h3>
+                <div class="flex gap-1.5">
+                    <button onclick="filterVocab('all')" class="text-xs px-2.5 py-1 rounded bg-amber-600 text-white">全部</button>
+                    <button onclick="filterVocab('tools')" class="text-xs px-2.5 py-1 rounded bg-slate-100 text-slate-600">工具</button>
+                    <button onclick="filterVocab('ingredients')" class="text-xs px-2.5 py-1 rounded bg-slate-100 text-slate-600">食材</button>
+                </div>
+            </div>
+
+            <div id="vocab-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[60vh] overflow-y-auto pr-1">
+                <!-- Dynamic Injection -->
+            </div>
+        </div>
+
+    </main>
+
+    <div id="certificate-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-xl w-full border-8 border-amber-600 shadow-2xl relative text-center space-y-4">
+            
+            <!-- Close Button -->
+            <button onclick="hideCertificate()" class="no-print absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+
+            <!-- Certificate Header -->
+            <div class="border-b-2 border-amber-200 pb-3">
+                <i class="fa-solid fa-award text-5xl text-amber-500 mb-1"></i>
+                <h2 class="text-2xl md:text-3xl font-black text-amber-900 tracking-wider">烘焙專業英語能力證明書</h2>
+                <p class="text-xs font-bold text-amber-700 tracking-widest uppercase mt-1">Certificate of Baking English Proficiency</p>
+            </div>
+
+            <!-- Student Info & Score Summary -->
+            <div class="space-y-2 py-2">
+                <p class="text-sm text-slate-600">茲證明學生</p>
+                <p class="text-xl md:text-2xl font-black text-slate-800 underline decoration-amber-500 underline-offset-4" id="cert-student-name">01 號 王小明</p>
+                <p class="text-sm text-slate-600 mt-2">參加高職烘焙專業英語聽力與口說闖關，成績評定如下：</p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 bg-amber-50 p-3 rounded-2xl border border-amber-200 text-center">
+                <div>
+                    <span class="block text-xs font-bold text-slate-500">聽力大挑戰</span>
+                    <span class="text-base md:text-lg font-black text-orange-600" id="cert-listening-score">0 / 200</span>
+                </div>
+                <div>
+                    <span class="block text-xs font-bold text-slate-500">食譜口說關</span>
+                    <span class="text-base md:text-lg font-black text-rose-600" id="cert-speaking-score">0 / 5 回合</span>
+                </div>
+                <div>
+                    <span class="block text-xs font-bold text-slate-500">測驗總得分</span>
+                    <span class="text-base md:text-lg font-black text-amber-700" id="cert-total-score">0 分</span>
+                </div>
+            </div>
+
+            <!-- Certificate Rank Badge -->
+            <div class="py-1">
+                <span class="text-xs font-bold text-slate-500 block mb-1">烘焙師等級評定</span>
+                <div class="inline-block px-6 py-2 rounded-full text-lg font-black tracking-wide shadow-sm" id="cert-rank-badge">
+                    星級烘焙師
+                </div>
+            </div>
+
+            <!-- Teacher Note & Date -->
+            <div class="flex justify-between items-end pt-3 text-xs text-slate-500 border-t border-slate-100">
+                <div class="text-left">
+                    <p>評定日期：<span id="cert-date">2026/10/16</span></p>
+                    <p>評定單位：高職烘焙科語文驗收小組</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold text-slate-700">指導教師簽章：________________</p>
+                </div>
+            </div>
+
+            <!-- Print & Action Buttons -->
+            <div class="no-print pt-2 flex justify-center gap-3">
+                <button onclick="window.print()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2 rounded-xl text-sm transition flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-print"></i> 列印 / 儲存證書 PDF
+                </button>
+                <button onclick="hideCertificate()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-sm transition">
+                    關閉
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-amber-900 text-amber-200/70 text-xs text-center py-3 mt-auto">
+        Baking Master 烘焙驗收王 &copy; 高職烘焙科專業英語驗收工具 (聽力扣分與五回合口說升級版)
+    </footer>
+
+    <script>
+        // ==================== 1. VOCABULARY DATA (42 WORDS) ====================
+        const vocabularyData = [
+            // Tools
+            { id: "t1", en: "lukewarm water", zh: "溫水", category: "tools", icon: "🥛" },
+            { id: "t2", en: "measuring cup", zh: "量杯", category: "tools", icon: "🥛" },
+            { id: "t3", en: "measuring spoon", zh: "量匙", category: "tools", icon: "🥄" },
+            { id: "t4", en: "mixer", zh: "攪拌機", category: "tools", icon: "⚙️" },
+            { id: "t5", en: "mixing bowl", zh: "攪拌碗", category: "tools", icon: "🥣" },
+            { id: "t6", en: "oven mitt", zh: "隔熱手套", category: "tools", icon: "🥊" },
+            { id: "t7", en: "oil brush", zh: "油刷", category: "tools", icon: "🖌️" },
+            { id: "t8", en: "spatula", zh: "刮刀", category: "tools", icon: "🪓" },
+            { id: "t9", en: "whisk", zh: "打蛋器", category: "tools", icon: "🥢" },
+            { id: "t10", en: "cooling rack", zh: "冷卻架", category: "tools", icon: "🏁" },
+            { id: "t11", en: "oven", zh: "烤箱", category: "tools", icon: "🔳" },
+            { id: "t12", en: "rolling pin", zh: "擀麵棍", category: "tools", icon: "🥖" },
+            { id: "t13", en: "maple syrup", zh: "楓糖漿", category: "ingredients", icon: "🍯" },
+            { id: "t14", en: "vanilla extract", zh: "香草精", category: "ingredients", icon: "🧪" },
+            { id: "t15", en: "sifter", zh: "篩網", category: "tools", icon: "🕸️" },
+            { id: "t16", en: "digital scale", zh: "電子秤", category: "tools", icon: "⚖️" },
+            { id: "t17", en: "apron", zh: "圍裙", category: "tools", icon: "🎽" },
+            { id: "t18", en: "baking tray", zh: "烤盤", category: "tools", icon: "🔲" },
+            { id: "t19", en: "baking sheet", zh: "烤盤紙/板", category: "tools", icon: "🔲" },
+            { id: "t20", en: "baking paper", zh: "烘焙紙", category: "tools", icon: "📜" },
+
+            // Ingredients
+            { id: "i1", en: "baking powder", zh: "泡打粉", category: "ingredients", icon: "🧂" },
+            { id: "i2", en: "baking soda", zh: "小蘇打粉", category: "ingredients", icon: "🧂" },
+            { id: "i3", en: "crystal sugar", zh: "冰糖", category: "ingredients", icon: "💎" },
+            { id: "i4", en: "rock sugar", zh: "冰糖", category: "ingredients", icon: "💎" },
+            { id: "i5", en: "granulated sugar", zh: "細砂糖", category: "ingredients", icon: "🍬" },
+            { id: "i6", en: "white sugar", zh: "白糖", category: "ingredients", icon: "🍬" },
+            { id: "i7", en: "brown sugar", zh: "黑糖/紅糖", category: "ingredients", icon: "🟤" },
+            { id: "i8", en: "shredded coconut", zh: "椰絲", category: "ingredients", icon: "🥥" },
+            { id: "i9", en: "whipped cream", zh: "打發鮮奶油", category: "ingredients", icon: "🍦" },
+            { id: "i10", en: "cinnamon powder", zh: "肉桂粉", category: "ingredients", icon: "🪵" },
+            { id: "i11", en: "gelatin sheet", zh: "吉利丁片", category: "ingredients", icon: "📄" },
+            { id: "i12", en: "yeast", zh: "酵母", category: "ingredients", icon: "🧫" },
+            { id: "i13", en: "unsalted butter", zh: "無鹽奶油", category: "ingredients", icon: "🧈" },
+            { id: "i14", en: "shaved almond", zh: "杏仁薄片", category: "ingredients", icon: "🥜" },
+            { id: "i15", en: "egg white", zh: "蛋白", category: "ingredients", icon: "🥚" },
+            { id: "i16", en: "egg yolk", zh: "蛋黃", category: "ingredients", icon: "🍳" },
+            { id: "i17", en: "sesame seed", zh: "芝麻", category: "ingredients", icon: "🌱" },
+            { id: "i18", en: "rock salt", zh: "岩鹽", category: "ingredients", icon: "🧂" },
+            { id: "i19", en: "zest", zh: "檸檬/橙皮屑", category: "ingredients", icon: "🍋" },
+            { id: "i20", en: "whole milk", zh: "全脂牛奶", category: "ingredients", icon: "🥛" },
+            { id: "i21", en: "low-fat milk", zh: "低脂牛奶", category: "ingredients", icon: "🥛" },
+            { id: "i22", en: "skim milk", zh: "脫脂牛奶", category: "ingredients", icon: "🥛" },
+            { id: "i23", en: "all-purpose flour", zh: "中筋麵粉", category: "ingredients", icon: "🌾" },
+            { id: "i24", en: "plain flour", zh: "中筋麵粉", category: "ingredients", icon: "🌾" },
+            { id: "i25", en: "cake flour", zh: "低筋麵粉", category: "ingredients", icon: "🌾" },
+            { id: "i26", en: "bread flour", zh: "高筋麵粉", category: "ingredients", icon: "🌾" }
+        ];
+
+        // 5 Recipes for Speaking Mode
+        const recipes = [
+            { name: "海綿蛋糕 (Sponge Cake)", items: ["cake flour", "unsalted butter", "vanilla extract"] },
+            { name: "歐式香醇麵包 (Artisan Bread)", items: ["bread flour", "yeast", "rock salt"] },
+            { name: "肉桂奇幻肉桂捲 (Cinnamon Roll)", items: ["all-purpose flour", "cinnamon powder", "brown sugar"] },
+            { name: "美式雙倍巧克餅 (Chocolate Cookies)", items: ["granulated sugar", "unsalted butter", "baking soda"] },
+            { name: "法式檸檬塔 (Lemon Tart)", items: ["egg yolk", "zest", "whipped cream"] }
+        ];
+
+        // Global State
+        let studentSeat = localStorage.getItem('baking_seat') || '';
+        let studentName = localStorage.getItem('baking_name') || '';
+        let totalScore = 0;
+        let listeningScore = 0;
+        let speakingRoundsCompleted = 0;
+        let slowSpeech = false;
+        let currentScreen = 'user-info';
+
+        // Initialize App
+        window.onload = () => {
+            if (studentSeat && studentName) {
+                updateStudentDisplay();
+                showScreen('home');
+            } else {
+                showScreen('user-info');
+            }
+            updateScoreUI();
+        };
+
+        function saveStudentInfo(e) {
+            e.preventDefault();
+            studentSeat = document.getElementById('input-seat').value.trim();
+            studentName = document.getElementById('input-name').value.trim();
+            if (studentSeat && studentName) {
+                localStorage.setItem('baking_seat', studentSeat);
+                localStorage.setItem('baking_name', studentName);
+                updateStudentDisplay();
+                showScreen('home');
+            }
+        }
+
+        function updateStudentDisplay() {
+            document.getElementById('student-tag').classList.remove('hidden');
+            document.getElementById('display-student-info').innerText = `${studentSeat}號 ${studentName}`;
+        }
+
+        function updateScoreUI() {
+            totalScore = listeningScore + (speakingRoundsCompleted * 30);
+            document.getElementById('score').innerText = totalScore;
+            document.getElementById('listening-best').innerText = listeningScore;
+            document.getElementById('speaking-best').innerText = speakingRoundsCompleted;
+        }
+
+        // Speech Synthesis (TTS)
+        function speakWord(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = slowSpeech ? 0.65 : 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function toggleSlowSpeech() {
+            slowSpeech = !slowSpeech;
+            document.getElementById('slow-status').innerText = slowSpeech ? '開' : '關';
+            document.getElementById('slow-speech-btn').classList.toggle('bg-amber-700', slowSpeech);
+        }
+
+        // Screen Navigation
+        function showScreen(screenId) {
+            document.querySelectorAll('[id^="screen-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`screen-${screenId}`).classList.remove('hidden');
+            currentScreen = screenId;
+
+            if (screenId === 'vocab-bank') renderVocabBank('all');
+        }
+
+        let listeningQuestionCount = 0;
+        let currentListeningTarget = null;
+        let questionBank = [];
+
+        function startListeningGame() {
+            showScreen('listening');
+            listeningQuestionCount = 0;
+            listeningScore = 0;
+            updateScoreUI();
+            document.getElementById('listening-current-score').innerText = listeningScore;
+
+            questionBank = [...vocabularyData].sort(() => 0.5 - Math.random());
+            if (questionBank.length < 20) {
+                questionBank = questionBank.concat([...vocabularyData]).slice(0, 20);
+            } else {
+                questionBank = questionBank.slice(0, 20);
+            }
+
+            nextListeningQuestion();
+        }
+
+        function nextListeningQuestion() {
+            listeningQuestionCount++;
+            document.getElementById('listening-progress').innerText = `題目: ${listeningQuestionCount}/20`;
+            document.getElementById('listening-hint-text').innerText = '';
+
+            currentListeningTarget = questionBank[listeningQuestionCount - 1];
+
+            const distractors = vocabularyData.filter(v => v.id !== currentListeningTarget.id)
+                .sort(() => 0.5 - Math.random()).slice(0, 3);
+
+            const options = [...distractors, currentListeningTarget].sort(() => 0.5 - Math.random());
+
+            const container = document.getElementById('listening-options');
+            container.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 rounded-xl p-3.5 text-center font-bold text-slate-700 transition flex flex-col items-center justify-center gap-1 shadow-sm';
+                btn.innerHTML = `
+                    <span class="text-2xl">${opt.icon}</span>
+                    <span class="text-xs md:text-sm font-bold">${opt.zh}</span>
+                `;
+                btn.onclick = () => checkListeningAnswer(opt.id, btn);
+                container.appendChild(btn);
+            });
+
+            setTimeout(playListeningPrompt, 300);
+        }
+
+        function playListeningPrompt() {
+            if (currentListeningTarget) {
+                speakWord(`Pass me the ${currentListeningTarget.en}, please.`);
+            }
+        }
+
+        function showListeningHint() {
+            if (currentListeningTarget) {
+                document.getElementById('listening-hint-text').innerText = `提示英文首字母: "${currentListeningTarget.en.charAt(0).toUpperCase()}" (${currentListeningTarget.en.length} 個字母)`;
+            }
+        }
+
+        function checkListeningAnswer(selectedId, btn) {
+            const buttons = document.querySelectorAll('#listening-options button');
+            buttons.forEach(b => b.disabled = true);
+
+            if (selectedId === currentListeningTarget.id) {
+                btn.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                listeningScore += 10;
+                updateScoreUI();
+                document.getElementById('listening-current-score').innerText = listeningScore;
+
+                setTimeout(() => {
+                    if (listeningQuestionCount < 20) {
+                        nextListeningQuestion();
+                    } else {
+                        alert(`🎉 太棒了！您完成了全部 20 題聽力測驗！\n聽力本關得分: ${listeningScore} 分！`);
+                        showScreen('home');
+                    }
+                }, 700);
+            } else {
+                btn.classList.add('bg-rose-100', 'border-rose-400', 'text-rose-800');
+                listeningScore = Math.max(0, listeningScore - 5);
+                updateScoreUI();
+                document.getElementById('listening-current-score').innerText = listeningScore;
+
+                speakWord("Try again!");
+                setTimeout(() => {
+                    btn.classList.remove('bg-rose-100', 'border-rose-400', 'text-rose-800');
+                    buttons.forEach(b => b.disabled = false);
+                }, 800);
+            }
+        }
+
+        let currentRound = 0; 
+        let currentIngredientIndex = 0; 
+        let currentSpeakingTarget = null;
+        let recognition = null;
+
+        function startSpeakingGame() {
+            showScreen('speaking');
+            currentRound = 0;
+            startSpeakingRound();
+        }
+
+        function startSpeakingRound() {
+            currentIngredientIndex = 0;
+            const recipe = recipes[currentRound];
+            document.getElementById('speaking-round-tag').innerText = `回合: ${currentRound + 1}/5`;
+            document.getElementById('recipe-name-display').innerText = `目標食譜 (${currentRound + 1}/5)：${recipe.name}`;
+            updateBowlUI();
+            loadSpeakingTarget();
+        }
+
+        function loadSpeakingTarget() {
+            const recipe = recipes[currentRound];
+            const targetEn = recipe.items[currentIngredientIndex];
+            const vocabObj = vocabularyData.find(v => v.en.toLowerCase() === targetEn.toLowerCase()) || { en: targetEn, zh: "食材" };
+            currentSpeakingTarget = vocabObj;
+
+            document.getElementById('target-word-en').innerText = vocabObj.en;
+            document.getElementById('target-word-zh').innerText = vocabObj.zh;
+            document.getElementById('speech-result').innerText = '';
+            document.getElementById('speech-status').innerText = `請點擊麥克風，唸出「${vocabObj.en}」`;
+        }
+
+        function speakTargetWord() {
+            if (currentSpeakingTarget) speakWord(currentSpeakingTarget.en);
+        }
+
+        function toggleSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("您的瀏覽器暫不支援 Web Speech 語音辨識，建議使用 Chrome 瀏覽器操作！");
+                return;
+            }
+
+            if (recognition) {
+                recognition.stop();
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            const micBtn = document.getElementById('mic-btn');
+            micBtn.classList.add('animate-pulse', 'bg-red-500');
+            document.getElementById('speech-status').innerText = '聆聽中...請清楚發音';
+
+            recognition.onresult = (event) => {
+                const spoken = event.results[0][0].transcript.toLowerCase().trim();
+                const target = currentSpeakingTarget.en.toLowerCase();
+
+                document.getElementById('speech-result').innerText = `辨識結果: "${spoken}"`;
+
+                if (spoken.includes(target) || target.includes(spoken) || levenshteinDistance(spoken, target) <= 2) {
+                    document.getElementById('speech-status').innerText = '✅ 發音精準！食材已加入配料碗！';
+                    currentIngredientIndex++;
+                    updateBowlUI();
+
+                    setTimeout(() => {
+                        if (currentIngredientIndex < 3) {
+                            loadSpeakingTarget();
+                        } else {
+                            speakingRoundsCompleted = Math.max(speakingRoundsCompleted, currentRound + 1);
+                            updateScoreUI();
+
+                            if (currentRound < 4) {
+                                alert(`🎂 太厲害了！成功解鎖第 ${currentRound + 1} 道食譜【${recipes[currentRound].name}】！進入下一回合！`);
+                                currentRound++;
+                                startSpeakingRound();
+                            } else {
+                                alert("🎉 恭喜！您成功挑戰完全部 5 回合魔法食譜！獲封頂級烘焙大師！");
+                                showScreen('home');
+                            }
+                        }
+                    }, 1000);
+                } else {
+                    document.getElementById('speech-status').innerText = '❌ 發音不太像，請點擊喇叭聽示範再試一次！';
+                }
+            };
+
+            recognition.onerror = () => {
+                document.getElementById('speech-status').innerText = '未捕捉到聲音，請再試一次。';
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove('animate-pulse', 'bg-red-500');
+                recognition = null;
+            };
+
+            recognition.start();
+        }
+
+        function updateBowlUI() {
+            document.getElementById('recipe-progress-text').innerText = `${currentIngredientIndex}/3 食材`;
+            const container = document.getElementById('bowl-ingredients');
+            container.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const badge = document.createElement('div');
+                badge.className = `w-12 h-12 rounded-full border-2 flex items-center justify-center text-lg font-bold shadow-inner ${i < currentIngredientIndex ? 'bg-amber-200 border-amber-500 text-amber-800' : 'bg-slate-100 border-slate-300 text-slate-300'}`;
+                badge.innerHTML = i < currentIngredientIndex ? '<i class="fa-solid fa-check"></i>' : (i + 1);
+                container.appendChild(badge);
+            }
+        }
+
+        function levenshteinDistance(a, b) {
+            if (a.length === 0) return b.length;
+            if (b.length === 0) return a.length;
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+            for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) matrix[i][j] = matrix[i - 1][j - 1];
+                    else matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+                }
+            }
+            return matrix[b.length][a.length];
+        }
+
+        function showCertificate() {
+            document.getElementById('cert-student-name').innerText = `${studentSeat ? studentSeat + ' 號 ' : ''}${studentName || '未填寫'}`;
+            document.getElementById('cert-listening-score').innerText = `${listeningScore} / 200`;
+            document.getElementById('cert-speaking-score').innerText = `${speakingRoundsCompleted} / 5 回合`;
+            document.getElementById('cert-total-score').innerText = `${totalScore} 分`;
+
+            const today = new Date();
+            document.getElementById('cert-date').innerText = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+
+            const rankBadge = document.getElementById('cert-rank-badge');
+            if (totalScore >= 300) {
+                rankBadge.className = "inline-block px-6 py-2 rounded-full text-lg font-black tracking-wide bg-amber-500 text-white shadow-md";
+                rankBadge.innerText = "🏆 米其林三星特優烘焙大師 (Master Baker)";
+            } else if (totalScore >= 200) {
+                rankBadge.className = "inline-block px-6 py-2 rounded-full text-lg font-black tracking-wide bg-orange-500 text-white shadow-md";
+                rankBadge.innerText = "🥇 高級烘焙廚藝師 (Senior Baker)";
+            } else if (totalScore >= 100) {
+                rankBadge.className = "inline-block px-6 py-2 rounded-full text-lg font-black tracking-wide bg-amber-200 text-amber-900 border border-amber-400";
+                rankBadge.innerText = "🥈 正式烘焙助手 (Junior Baker)";
+            } else {
+                rankBadge.className = "inline-block px-6 py-2 rounded-full text-lg font-black tracking-wide bg-slate-200 text-slate-700";
+                rankBadge.innerText = "🥉 烘焙學徒 (Baking Apprentice)";
+            }
+
+            document.getElementById('certificate-modal').classList.remove('hidden');
+        }
+
+        function hideCertificate() {
+            document.getElementById('certificate-modal').classList.add('hidden');
+        }
+
+        function renderVocabBank(filter) {
+            const list = document.getElementById('vocab-list');
+            list.innerHTML = '';
+
+            const filtered = filter === 'all' ? vocabularyData : vocabularyData.filter(v => v.category === filter);
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-3 rounded-xl border border-amber-200 shadow-sm flex justify-between items-center';
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">${item.icon}</span>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">${item.en}</h4>
+                            <p class="text-xs text-slate-500">${item.zh}</p>
+                        </div>
+                    </div>
+                    <button onclick="speakWord('${item.en}')" class="text-amber-600 hover:text-amber-800 p-2 text-base">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function filterVocab(cat) {
+            renderVocabBank(cat);
+        }
+    </script>
+</body>
+</html>
